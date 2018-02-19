@@ -58,7 +58,7 @@ func StartHTTPServer(config Config, errChan chan error) {
 	err := consulclient.ConsulInit(consulclient.ConsulConfig{
 		ServiceName:    applicationName,
 		ServicePort:    cfg.Port,
-		ServiceAddress: "localhost",
+		ServiceAddress: cfg.Hostname,
 		CheckAddress:   "http://" + cfg.Hostname + ":48071/api/v1/ping",
 		CheckInterval:  "10s",
 		ConsulAddress:  cfg.ConsulHost,

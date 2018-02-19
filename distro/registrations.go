@@ -240,7 +240,7 @@ func Loop(config Config, errChan chan error, eventCh chan *models.Event) {
 	err := consulclient.ConsulInit(consulclient.ConsulConfig{
 		ServiceName:    applicationName,
 		ServicePort:    cfg.Port,
-		ServiceAddress: "localhost",
+		ServiceAddress: cfg.Hostname,
 		CheckAddress:   "http://" + cfg.Hostname + ":" + strconv.Itoa(cfg.Port) + "/api/v1/ping",
 		CheckInterval:  "10s",
 		ConsulAddress:  cfg.ConsulHost,
