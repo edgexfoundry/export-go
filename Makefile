@@ -29,10 +29,10 @@ buildall: client distro distro_zmq
 docker: docker_client docker_distro
 
 docker_client:
-	docker build -f Dockerfile.client -t edgexfoundry/export-client-go:0.5.0-california-pre-release .
+	docker build -f Dockerfile.client .
 
 docker_distro:
-	docker build -f Dockerfile.distro -t edgexfoundry/export-distro-go:0.5.0-california-pre-release .
+	docker build -f Dockerfile.distro .
 
 test:
 	go test `glide novendor`
