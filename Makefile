@@ -5,7 +5,7 @@
 BUILD_DIR := build
 
 .PHONY: buildall test vet prepare $(BUILD_DIR)/client $(BUILD_DIR)/distro \
-		$(BUILD_DIR)/distro_zmq docker
+		$(BUILD_DIR)/distro_zmq docker docker_client docker_distro
 
 # Make exec targets phony to not track changes in go files. Compilation is fast
 .PHONY: client distro distro_zmq
@@ -26,9 +26,13 @@ distro_zmq: $(BUILD_DIR)
 
 buildall: client distro distro_zmq
 
-docker:
-	docker build -f Dockerfile.client  .
-	docker build -f Dockerfile.distro  .
+docker: docker_client docker_distro
+
+docker_client:
+	docker build -f Dockerfile.client -t edgexfoundry/export-client-go:0.5.0-california-pre-release .
+
+docker_distro:
+	docker build -f Dockerfile.distro -t edgexfoundry/export-distro-go:0.5.0-california-pre-release .
 
 test:
 	go test `glide novendor`
