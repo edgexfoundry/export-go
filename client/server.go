@@ -59,10 +59,10 @@ func StartHTTPServer(config Config, errChan chan error) {
 		ServiceName:    applicationName,
 		ServicePort:    cfg.Port,
 		ServiceAddress: "localhost",
-		CheckAddress:   "http://localhost:48071/api/v1/ping",
+		CheckAddress:   "http://" + cfg.Hostname + ":48071/api/v1/ping",
 		CheckInterval:  "10s",
-		ConsulAddress:  "localhost",
-		ConsulPort:     8500,
+		ConsulAddress:  cfg.ConsulHost,
+		ConsulPort:     cfg.ConsulPort,
 	})
 
 	if err == nil {

@@ -32,8 +32,11 @@ const (
 	defMongoPort           int    = 27017
 	defMongoConnectTimeout int    = 5000
 	defMongoSocketTimeout  int    = 5000
+	envClientHost          string = "EXPORT_CLIENT_HOST"
 	envMongoURL            string = "EXPORT_CLIENT_MONGO_URL"
 	envDistroHost          string = "EXPORT_CLIENT_DISTRO_HOST"
+	envConsulHost          string = "EXPORT_CLIENT_CONSUL_HOST"
+	envConsulPort          string = "EXPORT_CLIENT_CONSUL_PORT"
 )
 
 type config struct {
@@ -80,7 +83,6 @@ func main() {
 }
 
 func loadConfig() (*config, *client.Config) {
-
 	cfg := config{
 		MongoURL:            env(envMongoURL, defMongoURL),
 		MongoUser:           defMongoUsername,
@@ -92,7 +94,18 @@ func loadConfig() (*config, *client.Config) {
 	}
 
 	clientCfg := client.GetDefaultConfig()
+
+	hostname, err := os.Hostname()
+	if err == nil {
+		clientCfg.Hostname = hostname
+	}
+	clientCfg.Hostname = env(envClientHost, clientCfg.Hostname)
 	clientCfg.DistroHost = env(envDistroHost, clientCfg.DistroHost)
+	clientCfg.ConsulHost = env(envConsulHost, clientCfg.ConsulHost)
+	port, err := strconv.Atoi(env(envConsulPort, string(clientCfg.ConsulPort)))
+	if err == nil {
+		clientCfg.ConsulPort = port
+	}
 
 	return &cfg, &clientCfg
 }
