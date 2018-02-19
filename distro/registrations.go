@@ -15,12 +15,13 @@ package distro
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
-	export "github.com/edgexfoundry/export-go"
 	consulclient "github.com/edgexfoundry/consul-client-go"
+	export "github.com/edgexfoundry/export-go"
 
-  "github.com/edgexfoundry/core-domain-go/models"
+	"github.com/edgexfoundry/core-domain-go/models"
 
 	"go.uber.org/zap"
 )
@@ -240,10 +241,10 @@ func Loop(config Config, errChan chan error, eventCh chan *models.Event) {
 		ServiceName:    applicationName,
 		ServicePort:    cfg.Port,
 		ServiceAddress: "localhost",
-		CheckAddress:   "http://localhost:48070/api/v1/ping",
+		CheckAddress:   "http://" + cfg.Hostname + ":" + strconv.Itoa(cfg.Port) + "/api/v1/ping",
 		CheckInterval:  "10s",
-		ConsulAddress:  "localhost",
-		ConsulPort:     8500,
+		ConsulAddress:  cfg.ConsulHost,
+		ConsulPort:     cfg.ConsulPort,
 	})
 
 	if err == nil {

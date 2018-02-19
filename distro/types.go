@@ -15,8 +15,11 @@ import (
 
 const (
 	defaultPort       = 48070
+	defaultHostname   = "127.0.0.1"
 	defaultClientHost = "127.0.0.1"
 	defaultDataHost   = "127.0.0.1"
+	defaultConsulHost = "127.0.0.1"
+	defaultConsulPort = 8500
 	defaultMQTTSCert  = "dummy.crt"
 	defaultMQTTSKey   = "dummy.key"
 )
@@ -58,8 +61,11 @@ type registrationInfo struct {
 
 type Config struct {
 	Port       int
+	Hostname   string
 	ClientHost string
 	DataHost   string
+	ConsulHost string
+	ConsulPort int
 	MQTTSCert  string
 	MQTTSKey   string
 }
@@ -69,8 +75,11 @@ var cfg Config
 func GetDefaultConfig() Config {
 	return Config{
 		Port:       defaultPort,
+		Hostname:   defaultHostname,
 		ClientHost: defaultClientHost,
 		DataHost:   defaultDataHost,
+		ConsulHost: defaultConsulHost,
+		ConsulPort: defaultConsulPort,
 		MQTTSCert:  defaultMQTTSCert,
 		MQTTSKey:   defaultMQTTSKey,
 	}

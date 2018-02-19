@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/edgexfoundry/core-domain-go/models"
@@ -21,8 +22,11 @@ import (
 )
 
 const (
+	envDistroHost string = "EXPORT_DISTRO_HOST"
 	envClientHost string = "EXPORT_DISTRO_CLIENT_HOST"
 	envDataHost   string = "EXPORT_DISTRO_DATA_HOST"
+	envConsulHost string = "EXPORT_DISTRO_CONSUL_HOST"
+	envConsulPort string = "EXPORT_DISTRO_CONSUL_PORT"
 	envMQTTSCert  string = "EXPORT_DISTRO_MQTTS_CERT_FILE"
 	envMQTTSKey   string = "EXPORT_DISTRO_MQTTS_KEY_FILE"
 )
@@ -57,8 +61,19 @@ func main() {
 
 func loadConfig() distro.Config {
 	cfg := distro.GetDefaultConfig()
+
+	hostname, err := os.Hostname()
+	if err == nil {
+		cfg.Hostname = hostname
+	}
+	cfg.Hostname = env(envDistroHost, cfg.Hostname)
 	cfg.ClientHost = env(envClientHost, cfg.ClientHost)
 	cfg.DataHost = env(envDataHost, cfg.DataHost)
+	cfg.ConsulHost = env(envConsulHost, cfg.ConsulHost)
+	port, err := strconv.Atoi(env(envConsulPort, string(cfg.ConsulPort)))
+	if err == nil {
+		cfg.ConsulPort = port
+	}
 	cfg.MQTTSCert = env(envMQTTSCert, cfg.MQTTSCert)
 	cfg.MQTTSKey = env(envMQTTSKey, cfg.MQTTSKey)
 	return cfg
