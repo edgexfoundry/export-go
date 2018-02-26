@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	consulclient "github.com/edgexfoundry/consul-client-go"
 	"github.com/edgexfoundry/export-go/client"
 	"github.com/edgexfoundry/export-go/mongo"
 
@@ -25,6 +26,7 @@ import (
 
 const (
 	port                   int    = 48071
+	defHostname            string = "127.0.0.1"
 	defMongoURL            string = "0.0.0.0"
 	defMongoUsername       string = ""
 	defMongoPassword       string = ""
@@ -32,11 +34,17 @@ const (
 	defMongoPort           int    = 27017
 	defMongoConnectTimeout int    = 5000
 	defMongoSocketTimeout  int    = 5000
-	envClientHost          string = "EXPORT_CLIENT_HOST"
-	envMongoURL            string = "EXPORT_CLIENT_MONGO_URL"
-	envDistroHost          string = "EXPORT_CLIENT_DISTRO_HOST"
-	envConsulHost          string = "EXPORT_CLIENT_CONSUL_HOST"
-	envConsulPort          string = "EXPORT_CLIENT_CONSUL_PORT"
+	defConsulHost          string = "127.0.0.1"
+	defConsulPort          int    = 8500
+
+	envClientHost string = "EXPORT_CLIENT_HOST"
+	envMongoURL   string = "EXPORT_CLIENT_MONGO_URL"
+	envDistroHost string = "EXPORT_CLIENT_DISTRO_HOST"
+	envConsulHost string = "EXPORT_CLIENT_CONSUL_HOST"
+	envConsulPort string = "EXPORT_CLIENT_CONSUL_PORT"
+
+	applicationName string = "export-client"
+	consulProfile   string = "go"
 )
 
 type config struct {
@@ -48,15 +56,41 @@ type config struct {
 	MongoPort           int
 	MongoConnectTimeout int
 	MongoSocketTimeout  int
+
+	ConsulHost string
+	ConsulPort int
+	Hostname   string
 }
 
-func main() {
-	cfg, clientCfg := loadConfig()
+var logger *zap.Logger
 
-	logger, _ := zap.NewProduction()
+func main() {
+	logger, _ = zap.NewProduction()
 	defer logger.Sync()
 
 	client.InitLogger(logger)
+
+	cfg, clientCfg := loadConfig()
+
+	// Initialize service on Consul
+	err := consulclient.ConsulInit(consulclient.ConsulConfig{
+		ServiceName:    applicationName,
+		ServicePort:    cfg.Port,
+		ServiceAddress: cfg.Hostname,
+		CheckAddress:   "http://" + cfg.Hostname + ":" + strconv.Itoa(cfg.Port) + "/api/v1/ping",
+		CheckInterval:  "10s",
+		ConsulAddress:  cfg.ConsulHost,
+		ConsulPort:     cfg.ConsulPort,
+	})
+
+	if err == nil {
+		consulProfiles := []string{consulProfile}
+		if err := consulclient.CheckKeyValuePairs(clientCfg, applicationName, consulProfiles); err != nil {
+			logger.Warn("Error getting key/values from Consul", zap.Error(err))
+		}
+	} else {
+		logger.Warn("Error connecting to consul", zap.Error(err))
+	}
 
 	ms, err := connectToMongo(cfg)
 	if err != nil {
@@ -83,6 +117,9 @@ func main() {
 }
 
 func loadConfig() (*config, *client.Config) {
+	clientCfg := client.GetDefaultConfig()
+	clientCfg.DistroHost = env(envDistroHost, clientCfg.DistroHost)
+
 	cfg := config{
 		MongoURL:            env(envMongoURL, defMongoURL),
 		MongoUser:           defMongoUsername,
@@ -91,22 +128,24 @@ func loadConfig() (*config, *client.Config) {
 		MongoPort:           defMongoPort,
 		MongoConnectTimeout: defMongoConnectTimeout,
 		MongoSocketTimeout:  defMongoSocketTimeout,
+		ConsulHost:          env(envConsulHost, defConsulHost),
+		ConsulPort:          defConsulPort,
 	}
-
-	clientCfg := client.GetDefaultConfig()
 
 	hostname, err := os.Hostname()
 	if err == nil {
-		clientCfg.Hostname = hostname
+		cfg.Hostname = hostname
 	}
-	clientCfg.Hostname = env(envClientHost, clientCfg.Hostname)
-	clientCfg.DistroHost = env(envDistroHost, clientCfg.DistroHost)
-	clientCfg.ConsulHost = env(envConsulHost, clientCfg.ConsulHost)
-	port, err := strconv.Atoi(env(envConsulPort, string(clientCfg.ConsulPort)))
-	if err == nil {
-		clientCfg.ConsulPort = port
-	}
+	cfg.Hostname = env(envClientHost, cfg.Hostname)
 
+	portStr := env(envConsulPort, strconv.Itoa(cfg.ConsulPort))
+
+	port, err := strconv.Atoi(portStr)
+	if err == nil {
+		cfg.ConsulPort = port
+	} else {
+		logger.Warn("Could not parse port", zap.String("port", portStr), zap.Error(err))
+	}
 	return &cfg, &clientCfg
 }
 
